@@ -1,1 +1,296 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kirill & Friends — Click Battle</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+    background:radial-gradient(circle at top,#1d2750 0,#090b16 45%,#05060b 100%);
+    color:#fff; display:flex; justify-content:center; padding:22px 14px;
+  }
+  .wrap{width:100%;max-width:720px}
+  .hero{text-align:center;margin:15px 0 20px}
+  .badge{display:inline-block;padding:7px 12px;border:1px solid #ffffff22;border-radius:999px;background:#ffffff0d;font-size:12px;color:#aebcff}
+  h1{font-size:clamp(32px,9vw,58px);margin:10px 0 4px;letter-spacing:-2px}
+  .sub{color:#aeb4c7;margin:0}
+  .card{
+    background:#101422cc;border:1px solid #ffffff16;border-radius:24px;padding:20px;
+    box-shadow:0 18px 60px #0008;backdrop-filter:blur(12px);margin-bottom:16px;
+  }
+  label{display:block;color:#aeb4c7;font-size:13px;margin-bottom:7px}
+  input{
+    width:100%;padding:14px 15px;border-radius:14px;border:1px solid #ffffff18;
+    background:#080b14;color:#fff;font-size:16px;outline:none;
+  }
+  button{
+    border:0;border-radius:16px;padding:14px 18px;font-weight:800;font-size:16px;
+    cursor:pointer;color:#fff;background:linear-gradient(135deg,#635bff,#9b5cff);
+    box-shadow:0 10px 28px #635bff33;transition:.12s transform,.12s opacity;
+  }
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .start{width:100%;margin-top:12px}
+  .game{display:none;text-align:center}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .stat{background:#080b14;border:1px solid #ffffff10;border-radius:16px;padding:12px}
+  .num{font-size:27px;font-weight:900}
+  .small{font-size:12px;color:#858ca2}
+  #clickBtn{
+    width:min(300px,80vw);height:min(300px,80vw);border-radius:50%;font-size:34px;
+    margin:16px auto;display:block;background:radial-gradient(circle,#8b7cff,#4b42cf 65%,#29235f);
+    border:8px solid #ffffff12;box-shadow:0 0 70px #635bff55, inset 0 0 50px #fff1;
+  }
+  .hint{color:#858ca2;font-size:13px}
+  .result{display:none;text-align:center}
+  .result h2{margin:4px 0;font-size:30px}
+  .score{font-size:58px;font-weight:1000}
+  .board h2{margin-top:0}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:11px 8px;border-bottom:1px solid #ffffff0d}
+  th{color:#858ca2;font-size:12px;text-transform:uppercase}
+  td:last-child,th:last-child{text-align:right}
+  .you{background:#635bff12}
+  .empty{color:#858ca2;text-align:center;padding:18px}
+  .reset{background:#ffffff0d;box-shadow:none;font-size:13px;padding:10px 12px}
+  footer{text-align:center;color:#5f6679;font-size:11px;margin:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <span class="badge">⚡ FRIENDS • COMPETE • WIN</span>
+    <h1>Kirill & Friends</h1>
+    <p class="sub">30 Sekunden. So viele Klicks wie möglich.</p>
+  </div>
 
+  <section class="card" id="setup">
+    <label for="name">Dein Spielername</label>
+    <input id="name" maxlength="16" placeholder="z. B. Kirill" autocomplete="off">
+    <button class="start" id="startBtn">🎮 Runde starten</button>
+  </section>
+
+  <section class="card game" id="game">
+    <div class="stats">
+      <div class="stat"><div class="small">ZEIT</div><div class="num" id="time">30</div></div>
+      <div class="stat"><div class="small">PUNKTE</div><div class="num" id="score">0</div></div>
+    </div>
+    <button type="button" id="clickBtn" disabled>CLICK!</button>
+    <div class="hint">Klicke so schnell du kannst 👆</div>
+  </section>
+
+  <section class="card result" id="result">
+    <div class="small">DEIN SCORE</div>
+    <div class="score" id="finalScore">0</div>
+    <h2 id="resultTitle">🔥 Stark!</h2>
+    <button type="button" id="againBtn">Nochmal spielen</button>
+  </section>
+
+  <section class="card online-card">
+    <h2>🌐 Online-Leaderboard</h2>
+    <p class="hint" id="onlineStatus">Noch nicht verbunden. Trage später deine Backend-Daten ein.</p>
+    <div class="online-grid">
+      <div>
+        <label for="supabaseUrl">Supabase Project URL</label>
+        <input id="supabaseUrl" placeholder="https://dein-projekt.supabase.co" autocomplete="off">
+      </div>
+      <div>
+        <label for="supabaseKey">Supabase Publishable Key</label>
+        <input id="supabaseKey" type="password" placeholder="sb_publishable_..." autocomplete="off">
+      </div>
+    </div>
+    <button type="button" class="start" id="connectBtn">🌐 Supabase verbinden</button>
+  </section>
+
+  <section class="card board">
+    <h2>🏆 Leaderboard</h2>
+    <table>
+      <thead><tr><th>#</th><th>Spieler</th><th>Punkte</th></tr></thead>
+      <tbody id="leaderboard"></tbody>
+    </table>
+    <button type="button" class="reset" id="clearBtn">Leaderboard auf diesem Gerät löschen</button>
+  </section>
+
+  <footer>Online vorbereitet • Ohne Backend bleiben Scores lokal auf diesem Gerät.</footer>
+</div>
+
+
+<script>
+const $ = id => document.getElementById(id);
+let player = "", score = 0, time = 30, running = false, timer;
+
+function loadScores(){
+  try { return JSON.parse(localStorage.getItem("clickBattleScores") || "[]"); }
+  catch(e){ return []; }
+}
+async function saveScore(){
+  const scores = loadScores();
+  scores.push({name:player, score, date:Date.now()});
+  scores.sort((a,b)=>b.score-a.score);
+  localStorage.setItem("clickBattleScores", JSON.stringify(scores.slice(0,20)));
+  renderBoard();
+
+  if(supabaseClient){
+    try{
+      await submitOnlineScore();
+      setOnlineStatus("✅ Score online gespeichert.");
+      await renderOnlineBoard();
+    }catch(e){
+      console.error(e);
+      setOnlineStatus("⚠️ Online-Speicherung fehlgeschlagen – Score bleibt lokal.");
+    }
+  }
+}
+function renderBoard(){
+  const scores = loadScores();
+  $("leaderboard").innerHTML = scores.length ? scores.map((x,i)=>`
+    <tr class="${x.name===player && x.date===Math.max(...scores.filter(s=>s.name===player).map(s=>s.date))?'you':''}">
+      <td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+      <td>${escapeHtml(x.name)}</td><td><b>${x.score}</b></td>
+    </tr>`).join("") :
+    `<tr><td colspan="3" class="empty">Noch keine Scores — sei der Erste!</td></tr>`;
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+
+const ONLINE_CONFIG_KEY = "clickBattleSupabaseConfig";
+let supabaseClient = null;
+let supabaseConfig = null;
+
+function loadOnlineConfig(){
+  try { return JSON.parse(localStorage.getItem(ONLINE_CONFIG_KEY) || "{}"); }
+  catch(e){ return {}; }
+}
+
+function saveOnlineConfig(){
+  const config = {
+    url: $("supabaseUrl").value.trim().replace(/\/+$/,""),
+    key: $("supabaseKey").value.trim()
+  };
+  localStorage.setItem(ONLINE_CONFIG_KEY, JSON.stringify(config));
+  return config;
+}
+
+function setOnlineStatus(text){
+  $("onlineStatus").textContent = text;
+}
+
+function createSupabaseClient(){
+  const config = saveOnlineConfig();
+  if(!config.url || !config.key) throw new Error("Supabase URL und Publishable Key fehlen.");
+  supabaseConfig = config;
+  supabaseClient = true;
+  return true;
+}
+async function supabaseFetch(path, options={}){
+  if(!supabaseConfig) throw new Error("Nicht verbunden");
+  const headers=Object.assign({apikey:supabaseConfig.key,Authorization:"Bearer "+supabaseConfig.key}, options.headers||{});
+  const r=await fetch(supabaseConfig.url.replace(/\/+$/,'')+"/rest/v1/"+path,{...options,headers});
+  const txt=await r.text();
+  let data=null; try{data=txt?JSON.parse(txt):null}catch(e){}
+  if(!r.ok) throw new Error((data&&data.message)||txt||("HTTP "+r.status));
+  return data;
+}
+
+/*
+  SUPABASE-TABELLE:
+
+  create table public.scores (
+    id bigint generated by default as identity primary key,
+    name text not null,
+    score integer not null,
+    created_at timestamptz not null default now()
+  );
+
+  Danach Row Level Security aktivieren und für die öffentliche
+  Rangliste SELECT + INSERT mit passenden Policies erlauben.
+*/
+
+async function loadOnlineScores(){
+  if(!supabaseClient) return null;
+
+  const data = await supabaseFetch("scores?select=id,name,score,created_at&order=score.desc&limit=20");
+  return (data || []).map(x => ({
+    name: String(x.name ?? "Spieler"),
+    score: Number(x.score) || 0,
+    date: x.created_at ? Date.parse(x.created_at) : 0
+  }));
+}
+
+async function submitOnlineScore(){
+  if(!supabaseClient) return false;
+
+  const safeName = String(player || "Spieler").trim().slice(0,16);
+  const safeScore = Math.max(0, Math.min(10000, Number(score) || 0));
+
+  await supabaseFetch("scores",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({name:safeName,score:safeScore})});
+  return true;
+}
+
+async function renderOnlineBoard(){
+  try{
+    const scores = await loadOnlineScores();
+    if(!scores) return;
+
+    $("leaderboard").innerHTML = scores.length ? scores.map((x,i)=>`
+      <tr>
+        <td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+        <td>${escapeHtml(x.name)}</td>
+        <td><b>${x.score}</b></td>
+      </tr>`).join("") :
+      `<tr><td colspan="3" class="empty">Noch keine Online-Scores!</td></tr>`;
+  }catch(e){
+    console.error(e);
+    setOnlineStatus("⚠️ Verbindung/Tabelle prüfen – lokales Leaderboard bleibt aktiv.");
+  }
+}
+
+async function connectOnline(){
+  try{
+    createSupabaseClient();
+    setOnlineStatus("🔄 Supabase-Verbindung wird geprüft...");
+    await loadOnlineScores();
+    setOnlineStatus("🟢 Online-Leaderboard verbunden.");
+    await renderOnlineBoard();
+  }catch(e){
+    console.error(e);
+    supabaseClient = null; supabaseConfig=null;
+    setOnlineStatus("⚠️ Verbindung fehlgeschlagen. URL, Key und Tabelle prüfen.");
+  }
+}
+
+function startGame(){
+  player = $("name").value.trim() || "Spieler";
+  score=0; time=30; running=true;
+  $("setup").style.display="none"; $("result").style.display="none"; $("game").style.display="block";
+  $("score").textContent=0; $("time").textContent=30; $("clickBtn").disabled=false;
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    time--; $("time").textContent=time;
+    if(time<=0) endGame();
+  },1000);
+}
+function endGame(){
+  if(!running)return;
+  running=false; clearInterval(timer); $("clickBtn").disabled=true;
+  $("finalScore").textContent=score;
+  $("resultTitle").textContent=score>=250?"👑 ABSOLUTE MASCHINE!":score>=180?"🔥 Stark!":score>=120?"💪 Nicht schlecht!":"😈 Da geht noch mehr!";
+  $("game").style.display="none"; $("result").style.display="block";
+  saveScore();
+}
+$("connectBtn").onclick=connectOnline;
+
+const savedOnlineConfig = loadOnlineConfig();
+if(savedOnlineConfig.url) $("supabaseUrl").value = savedOnlineConfig.url;
+if(savedOnlineConfig.key) $("supabaseKey").value = savedOnlineConfig.key;
+
+$("startBtn").onclick=startGame;
+$("againBtn").onclick=()=>{ $("result").style.display="none"; $("setup").style.display="block"; };
+$("clickBtn").onclick=()=>{if(running){score++;$("score").textContent=score;}};
+$("clearBtn").onclick=()=>{if(confirm("Wirklich alle Scores löschen?")){localStorage.removeItem("clickBattleScores");renderBoard();}};
+$("name").addEventListener("keydown",e=>{if(e.key==="Enter")startGame();});
+renderBoard();
+</script>
+</body>
+</html>
